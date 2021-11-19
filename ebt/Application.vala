@@ -198,15 +198,11 @@ public class BluetoothApp : Gtk.Application {
         });
 
         Bluetooth.Device device = object_manager.get_device (address);
-        string devicename = device.name;
-        string deviceicon = device.icon;
-        bt_receiver.set_transfer (devicename == null? device_icon (device) : devicename, deviceicon, objectpath);
+        bt_receiver.set_transfer (device.name == null? device_icon (device) : device.name, device.icon, objectpath);
     }
 
     private void response_notify (string address, GLib.ObjectPath objectpath) {
         Bluetooth.Device device = object_manager.get_device (address);
-        string devicename = device.name;
-        string deviceicon = device.icon;
         try {
             transfer = Bus.get_proxy_sync (BusType.SESSION, "org.bluez.obex", objectpath);
         } catch (Error e) {
@@ -214,7 +210,7 @@ public class BluetoothApp : Gtk.Application {
         }
 
         var notification = new GLib.Notification ("bluetooth");
-        notification.set_icon (new ThemedIcon (deviceicon));
+        notification.set_icon (new ThemedIcon (device.icon));
         if (reject_if_exist (transfer.name, transfer.size)) {
             notification.set_title (_("Rejected file"));
             notification.set_body (_("<b>File:</b> %s <b>Size: </b>%s already exist").printf (
@@ -252,18 +248,18 @@ public class BluetoothApp : Gtk.Application {
             notification.set_priority (NotificationPriority.URGENT);
             notification.set_title (_("Incoming file"));
             notification.set_body (_("<b>%s</b> is ready to send file: %s size: %s").printf (
-                devicename == null? device_icon (device) : devicename, transfer.name, GLib.format_size (transfer.size)
+                device.name == null? device_icon (device) : device.name, transfer.name, GLib.format_size (transfer.size)
             ));
             notification.add_button (_("Accept"), GLib.Action.print_detailed_name ("app.btaccept", new Variant ("s", "Accept")));
             notification.add_button (_("Cancel"), GLib.Action.print_detailed_name ("app.btcancel", new Variant ("s", "Cancel")));
-            bt_response.update_device (devicename == null? device_icon (device) : devicename);
+            bt_response.update_device (device.name == null? device_icon (device) : device.name);
             bt_response.update_filename (transfer.name);
             bt_response.update_size (transfer.size);
-            bt_response.update_icon (deviceicon);
+            bt_response.update_icon (device.icon);
         } else {
             notification.set_title (_("Receiving file"));
             notification.set_body (_("%s sending file: %s size: %s").printf (
-                devicename, transfer.name, GLib.format_size (transfer.size)
+                device.name, transfer.name, GLib.format_size (transfer.size)
             ));
 
             Idle.add (()=>{
@@ -320,7 +316,7 @@ public class BluetoothApp : Gtk.Application {
     }
 
     private string contract_dir () {
-        string build_path = Path.build_filename (Environment.get_home_dir (), ".local", "share", "contractor");
+        var build_path = Path.build_filename (Environment.get_home_dir (), ".local", "share", "contractor");
         if (!File.new_for_path (build_path).query_exists ()) {
             DirUtils.create (build_path, 0700);
         }
@@ -339,12 +335,12 @@ public class BluetoothApp : Gtk.Application {
             File file = file_contract ();
             permanent_delete (file);
             FileOutputStream out_stream = file.create (FileCreateFlags.PRIVATE);
-            string str_contract = "[Contractor Entry]\n";
-            string str_name = _("Name=%s").printf ("Send Files via Bluetooth\n");
-            string str_icon = _("Icon=bluetooth\n");
-            string str_desc = _("Description=%s").printf ("Send files to device…\n");
-            string str_command = "Exec=io.elementary.bluetooth -f %F \n";
-            string mimetype = _("MimeType=!inode;\n");
+            var str_contract = "[Contractor Entry]\n";
+            var str_name = _("Name=%s").printf ("Send Files via Bluetooth\n");
+            var str_icon = _("Icon=bluetooth\n");
+            var str_desc = _("Description=%s").printf ("Send files to device…\n");
+            var str_command = "Exec=io.elementary.bluetooth -f %F \n";
+            var mimetype = _("MimeType=!inode;\n");
             out_stream.write (str_contract.data);
             out_stream.write (str_name.data);
             out_stream.write (str_icon.data);
