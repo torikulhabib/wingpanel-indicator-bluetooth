@@ -31,13 +31,14 @@ public class BtReceiver : Granite.Dialog {
     private Gtk.Image device_image;
     private GLib.Notification notification;
     private string path_folder = "";
-    public string session {get; set;}
+    public string session { get; set; }
     private int start_time = 0;
     private uint64 total_size = 0;
 
     public BtReceiver (Gtk.Application application) {
-        Object (application: application,
-                resizable :false
+        Object (
+            application: application,
+            resizable :false
         );
     }
 
@@ -112,6 +113,7 @@ public class BtReceiver : Granite.Dialog {
         add_button ("Close", Gtk.ResponseType.CLOSE);
         var suggested_button = add_button ("Reject", Gtk.ResponseType.ACCEPT);
         suggested_button.get_style_context ().add_class (Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION);
+
         response.connect ((response_id) => {
             if (response_id == Gtk.ResponseType.ACCEPT) {
                 try {
@@ -124,6 +126,7 @@ public class BtReceiver : Granite.Dialog {
                 hide_on_delete ();
             }
         });
+
         delete_event.connect (() => {
             if (transfer.status == "active") {
                 return hide_on_delete ();
@@ -135,14 +138,19 @@ public class BtReceiver : Granite.Dialog {
 
     public void set_tranfer (string devicename, string deviceicon, string objectpath) {
         device_label.set_markup (_("<b>From</b>: %s").printf (GLib.Markup.escape_text (devicename)));
-        directory_label.label = _("<b>To</b>: %s").printf (GLib.Environment.get_user_special_dir (UserDirectory.DOWNLOAD));
-        device_image.set_from_gicon (new ThemedIcon (deviceicon == null? "bluetooth" : deviceicon), Gtk.IconSize.LARGE_TOOLBAR);
+        directory_label.label = _("<b>To</b>: %s").printf (
+            GLib.Environment.get_user_special_dir (UserDirectory.DOWNLOAD)
+        );
+        device_image.set_from_gicon (
+            new ThemedIcon (deviceicon == null? "bluetooth" : deviceicon), Gtk.IconSize.LARGE_TOOLBAR
+        );
         start_time = (int) get_real_time ();
         try {
             transfer = Bus.get_proxy_sync (BusType.SESSION, "org.bluez.obex", objectpath);
             ((DBusProxy) transfer).g_properties_changed.connect ((changed, invalid) => {
                 tranfer_progress ();
             });
+
             total_size = transfer.size;
             session = transfer.session;
             filename_label.set_markup (_("<b>Filename</b>: %s").printf (GLib.Markup.escape_text (transfer.name)));
@@ -156,8 +164,12 @@ public class BtReceiver : Granite.Dialog {
                 case "error":
                     notification.set_icon (device_image.gicon);
                     notification.set_title (_("File transfer failed"));
-                    notification.set_body (_("%s <b>File:</b> %s not received").printf (device_label.get_label (), transfer.name));
-                    ((Gtk.Window) get_toplevel ()).application.send_notification ("io.elementary.bluetooth", notification);
+                    notification.set_body (_("%s <b>File:</b> %s not received").printf (
+                        device_label.get_label (), transfer.name)
+                    );
+                    ((Gtk.Window) get_toplevel ()).application.send_notification (
+                        "io.elementary.bluetooth", notification
+                    );
                     destroy ();
                     break;
                 case "queued":
@@ -167,6 +179,7 @@ public class BtReceiver : Granite.Dialog {
                     if (path != null) {
                         path_folder = path;
                     }
+
                     on_transfer_progress (transfer.transferred);
                     break;
                 case "complete":
@@ -180,7 +193,9 @@ public class BtReceiver : Granite.Dialog {
     }
     private void move_to_folder (string file) throws GLib.Error {
         var src = File.new_for_path (file);
-        var dest = change_name (GLib.Environment.get_user_special_dir (UserDirectory.DOWNLOAD) + GLib.Path.DIR_SEPARATOR_S + src.get_basename ());
+        var dest = change_name (
+            Environment.get_user_special_dir (UserDirectory.DOWNLOAD) + Path.DIR_SEPARATOR_S + src.get_basename ()
+        );
         src.move (dest, FileCopyFlags.ALL_METADATA);
         notification.set_icon (device_image.gicon);
         notification.set_title (_("File transferred successfully"));
@@ -199,6 +214,7 @@ public class BtReceiver : Granite.Dialog {
             } else {
                 without_ext = uri.slice (0, last_dot);
             }
+
             string ext_name = uri.substring (last_dot);
             string time = new GLib.DateTime.now_local ().format (" (%F %H:%M:%S)");
             return File.new_for_path (without_ext + time + ext_name);
@@ -208,23 +224,30 @@ public class BtReceiver : Granite.Dialog {
     }
 
     private void on_transfer_progress (uint64 transferred) {
-        progress_label.label = _("Receiving…  %s of %s").printf (GLib.format_size (transferred), GLib.format_size (total_size));
+        progress_label.label = _("Receiving…  %s of %s").printf (
+            GLib.format_size (transferred), GLib.format_size (total_size)
+        );
         progressbar.fraction = (double) transferred / (double) total_size;
         int current_time = (int) get_real_time ();
         int elapsed_time = (current_time - start_time) / 1000000;
         if (current_time < start_time + 1000000) {
             return;
         }
+
         if (elapsed_time == 0) {
             return;
         }
+
         uint64 transfer_rate = transferred / elapsed_time;
         if (transfer_rate == 0) {
             return;
         }
+
         rate_label.label = _("<b>Transfer rate:</b> %s").printf (GLib.format_size (transfer_rate));
         uint64 remaining_time = (total_size - transferred) / transfer_rate;
-        progress_label.label = _("%s of %s received, time remaining %s").printf (GLib.format_size (transferred), GLib.format_size (total_size), format_time ((int)remaining_time));
+        progress_label.label = _("%s of %s received, time remaining %s").printf (
+            GLib.format_size (transferred), GLib.format_size (total_size), format_time ((int)remaining_time)
+        );
     }
 
     private string format_time (int seconds) {
