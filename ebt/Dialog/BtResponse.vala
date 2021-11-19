@@ -27,8 +27,9 @@ public class BtResponse : Granite.Dialog {
     private Gtk.Image status_image;
 
     public BtResponse (Gtk.Application application) {
-        Object (application: application,
-                resizable :false
+        Object (
+            application: application,
+            resizable :false
         );
     }
 
@@ -92,13 +93,18 @@ public class BtResponse : Granite.Dialog {
     public void update_device (string label) {
         device_label.set_markup (_("<b>%s</b> is ready to send").printf (GLib.Markup.escape_text (label)));
     }
+
     public void update_filename (string filename) {
         filename_label.set_markup (_("<b>Filename:</b> %s").printf (GLib.Markup.escape_text (filename)));
     }
+
     public void update_size (uint64 size) {
         size_label.label = _("<b>Size:</b> %s").printf (GLib.format_size (size));
     }
+
     public void update_icon (string deviceicon) {
-        status_image.set_from_gicon (new ThemedIcon (deviceicon == null? "bluetooth" : deviceicon), Gtk.IconSize.LARGE_TOOLBAR);
+        status_image.set_from_gicon (
+            new ThemedIcon (deviceicon == null? "bluetooth" : deviceicon), Gtk.IconSize.LARGE_TOOLBAR
+        );
     }
 }
