@@ -43,8 +43,9 @@ public class BtSender : Granite.Dialog {
     private GLib.DBusProxy session;
 
     public BtSender (Gtk.Application application) {
-        Object (application: application,
-                resizable :false
+        Object (
+            application: application,
+            resizable :false
         );
     }
 
@@ -128,9 +129,11 @@ public class BtSender : Granite.Dialog {
                         } catch (Error e) {
                             GLib.warning (e.message);
                         }
+
                         remove_session.begin ();
                     }
                 }
+
                 destroy ();
             } else {
                 if (transfer.status == "active") {
@@ -140,6 +143,7 @@ public class BtSender : Granite.Dialog {
                 }
             }
         });
+
         delete_event.connect (() => {
             if (transfer.status == "active") {
                 return hide_on_delete ();
@@ -155,6 +159,7 @@ public class BtSender : Granite.Dialog {
             liststore.append (out iter);
             liststore.set (iter, 0, file);
         }
+
         this.device = device;
 
         Gtk.TreeIter iter;
@@ -169,22 +174,26 @@ public class BtSender : Granite.Dialog {
         foreach (var file in files) {
             bool exist = false;
             liststore.foreach ((model, path, iter) => {
-            File filename;
-            model.get (iter, 0, out filename);
-                if (filename == file) {
-                    exist = true;
-                }
-                return false;
+                File filename;
+                model.get (iter, 0, out filename);
+                    if (filename == file) {
+                        exist = true;
+                    }
+
+                    return false;
             });
+
             if (exist) {
                 return;
             }
+
             Gtk.TreeIter iter;
             liststore.append (out iter);
             liststore.set (iter, 0, file);
             total_n_current (true);
         }
     }
+
     private bool next_file () {
         Gtk.TreeIter iter;
         if (liststore.get_iter_from_string (out iter, current_file.to_string ())) {
@@ -193,6 +202,7 @@ public class BtSender : Granite.Dialog {
             total_n_current ();
             return true;
         }
+
         return false;
     }
     private void total_n_current (bool total = false) {
@@ -204,9 +214,11 @@ public class BtSender : Granite.Dialog {
             if (file == file_path) {
                 current = total_file;
             }
+
             total_file++;
             return false;
         });
+
         if (!total) {
             current_file = current + 1;
         }
@@ -215,18 +227,33 @@ public class BtSender : Granite.Dialog {
     private async void create_season () {
         try {
             connection = yield GLib.Bus.get (BusType.SESSION);
-            client_proxy = yield new GLib.DBusProxy (connection, GLib.DBusProxyFlags.DO_NOT_LOAD_PROPERTIES | GLib.DBusProxyFlags.DO_NOT_CONNECT_SIGNALS, null, "org.bluez.obex", "/org/bluez/obex", "org.bluez.obex.Client1");
+            client_proxy = yield new GLib.DBusProxy (
+                connection,
+                GLib.DBusProxyFlags.DO_NOT_LOAD_PROPERTIES | GLib.DBusProxyFlags.DO_NOT_CONNECT_SIGNALS,
+                null,
+                "org.bluez.obex",
+                "/org/bluez/obex",
+                "org.bluez.obex.Client1"
+            );
             VariantBuilder builder = new VariantBuilder (VariantType.DICTIONARY);
             builder.add ("{sv}", "Target", new Variant.string ("opp"));
             Variant parameters = new Variant ("(sa{sv})", device.address, builder);
             Variant variant_client = yield client_proxy.call ("CreateSession", parameters, GLib.DBusCallFlags.NONE, -1);
             variant_client.get ("(o)", out s_session);
-            session = yield new GLib.DBusProxy (connection, GLib.DBusProxyFlags.NONE, null, "org.bluez.obex", s_session, "org.bluez.obex.ObjectPush1");
+            session = yield new GLib.DBusProxy (
+                connection,
+                GLib.DBusProxyFlags.NONE,
+                null,
+                "org.bluez.obex",
+                s_session,
+                "org.bluez.obex.ObjectPush1"
+            );
             send_file.begin ();
         } catch (Error e) {
             GLib.warning (e.message);
         }
     }
+
     private async void remove_session () {
         try {
             yield client_proxy.call ("RemoveSession", new Variant ("(o)", s_session), GLib.DBusCallFlags.NONE, -1);
@@ -234,18 +261,25 @@ public class BtSender : Granite.Dialog {
             GLib.warning (e.message);
         }
     }
+
     private async void send_file () {
         path_label.set_markup (_("<b>From</b>: %s").printf (file_path.get_parent ().get_path ()));
         device_label.set_markup (_("<b>To</b>: %s").printf (GLib.Markup.escape_text (device.name)));
-        icon_label.set_from_gicon (new ThemedIcon (device.icon == null? "bluetooth" : device.icon), Gtk.IconSize.LARGE_TOOLBAR);
+        icon_label.set_from_gicon (
+            new ThemedIcon (device.icon == null? "bluetooth" : device.icon), Gtk.IconSize.LARGE_TOOLBAR
+        );
         progress_label.label = _("Sending… (%i/%i)").printf (current_file, total_file);
         try {
-            Variant variant = yield session.call ("SendFile", new Variant ("(s)", file_path.get_path ()), GLib.DBusCallFlags.NONE, -1);
+            Variant variant = yield session.call (
+                "SendFile", new Variant ("(s)", file_path.get_path ()), GLib.DBusCallFlags.NONE, -1
+            );
             start_time = (int) get_real_time ();
             GLib.ObjectPath objectpath;
             variant.get ("(oa{sv})", out objectpath, null);
             transfer = Bus.get_proxy_sync (BusType.SESSION, "org.bluez.obex", objectpath);
-            filename_label.set_markup (_("<b>Filename</b>: %s").printf (GLib.Markup.escape_text (transfer.name)));
+            filename_label.set_markup (_("<b>Filename</b>: %s").printf (
+                GLib.Markup.escape_text (transfer.name))
+            );
             total_size = transfer.size;
             ((DBusProxy) transfer).g_properties_changed.connect ((changed, invalid) => {
                 tranfer_progress ();
@@ -265,6 +299,7 @@ public class BtSender : Granite.Dialog {
                     bt_retry.update_filename (file_path.get_basename ());
                     bt_retry.update_result (device.name);
                     bt_retry.show_all ();
+
                     bt_retry.response.connect ((response_id) => {
                         if (response_id == Gtk.ResponseType.ACCEPT) {
                             create_season.begin ();
@@ -274,10 +309,12 @@ public class BtSender : Granite.Dialog {
                             destroy ();
                         }
                     });
+
                     bt_retry.destroy.connect (()=> {
                         bt_retry = null;
                     });
                 }
+
                 progressbar.fraction = 0.0;
                 remove_session.begin ();
                 break;
@@ -292,9 +329,11 @@ public class BtSender : Granite.Dialog {
                     remove_session.begin ();
                     destroy ();
                 }
+
                 break;
         }
     }
+
     private void send_notify () {
         var notification = new GLib.Notification ("bluetooth");
         notification.set_icon (new ThemedIcon (device.icon));
@@ -311,16 +350,25 @@ public class BtSender : Granite.Dialog {
         if (current_time < start_time + 1000000) {
             return;
         }
+
         if (elapsed_time == 0) {
             return;
         }
+
         uint64 transfer_rate = transferred / elapsed_time;
         if (transfer_rate == 0) {
             return;
         }
+
         rate_label.label = _("<b>Transfer rate:</b> %s").printf (GLib.format_size (transfer_rate));
         uint64 remaining_time = (total_size - transferred) / transfer_rate;
-        progress_label.label = _("(%i/%i) %s of %s sent, time remaining %s").printf (current_file, total_file, GLib.format_size (transferred), GLib.format_size (total_size), format_time ((int)remaining_time));
+        progress_label.label = _("(%i/%i) %s of %s sent, time remaining %s").printf (
+            current_file,
+            total_file,
+            GLib.format_size (transferred),
+            GLib.format_size (total_size),
+            format_time ((int)remaining_time)
+        );
     }
 
     private string format_time (int seconds) {

@@ -26,9 +26,10 @@ public class BtRetry : Granite.Dialog {
     private Gtk.Label result_label;
 
     public BtRetry (Gtk.Widget widget) {
-        Object (transient_for: (Gtk.Window) widget.get_toplevel (),
-                destroy_with_parent: true,
-                resizable :false
+        Object (
+            transient_for: (Gtk.Window) widget.get_toplevel (),
+            destroy_with_parent: true,
+            resizable :false
         );
     }
 
@@ -95,9 +96,11 @@ public class BtRetry : Granite.Dialog {
     public void update_device (string label) {
         device_label.set_markup (_("<b>Send to:</b> %s").printf (GLib.Markup.escape_text (label)));
     }
+
     public void update_filename (string filename) {
         filename_label.set_markup (_("<b>Filename:</b> %s").printf (GLib.Markup.escape_text (filename)));
     }
+
     public void update_result (string result) {
         result_label.set_markup (_("<b>Result:</b> File not send to %s").printf (GLib.Markup.escape_text (result)));
     }
