@@ -66,7 +66,9 @@ public class BluetoothApp : Gtk.Application {
                 files += (File.new_for_path (arg_file));
             }
         }
+
         activate ();
+
         if (send) {
             if (files != null) {
                 if (bt_scan == null) {
@@ -75,9 +77,11 @@ public class BluetoothApp : Gtk.Application {
                 } else {
                     bt_scan.present ();
                 }
+
                 bt_scan.destroy.connect (() => {
                     bt_scan = null;
                 });
+
                 bt_scan.send_file.connect ((device) => {
                     if (!insert_sender (files, device)) {
                         bt_sender = new BtSender (this);
@@ -93,10 +97,13 @@ public class BluetoothApp : Gtk.Application {
                         });
                     }
                 });
+
                 arg_files = {};
             }
+
             send = false;
         }
+
         return 0;
     }
 
@@ -127,13 +134,16 @@ public class BluetoothApp : Gtk.Application {
                         agent_obex.response_notify.connect (response_notify);
                         active_once = true;
                     }
+
                     create_contract ();
                 } else {
                     remove_contract ();
                 }
             });
+
             silent = false;
         }
+
         if (bt_response != null ) {
             bt_response.show_all ();
         }
@@ -148,6 +158,7 @@ public class BluetoothApp : Gtk.Application {
                 exist = true;
             }
         });
+
         return exist;
     }
     private void dialog_active (string session_path) {
@@ -156,6 +167,7 @@ public class BluetoothApp : Gtk.Application {
                 reciever.show_all ();
             }
         });
+
         bt_senders.foreach ((sender)=>{
             if (sender.transfer.session == session_path) {
                 sender.show_all ();
@@ -169,9 +181,11 @@ public class BluetoothApp : Gtk.Application {
         } catch (Error e) {
             GLib.warning (e.message);
         }
+
         if (transfer.name == null) {
             return;
         }
+
         dialog_destroy ();
         bt_receiver = new BtReceiver (this);
         bt_receivers.append (bt_receiver);
@@ -182,6 +196,7 @@ public class BluetoothApp : Gtk.Application {
                 }
             });
         });
+
         Bluetooth.Device device = object_manager.get_device (address);
         string devicename = device.name;
         string deviceicon = device.icon;
@@ -197,33 +212,48 @@ public class BluetoothApp : Gtk.Application {
         } catch (Error e) {
             GLib.warning (e.message);
         }
+
         var notification = new GLib.Notification ("bluetooth");
         notification.set_icon (new ThemedIcon (deviceicon));
         if (reject_if_exist (transfer.name, transfer.size)) {
             notification.set_title (_("Rejected file"));
-            notification.set_body ( _("<b>File:</b> %s <b>Size: </b>%s already exist").printf (transfer.name, GLib.format_size (transfer.size)));
+            notification.set_body (_("<b>File:</b> %s <b>Size: </b>%s already exist").printf (
+                transfer.name, GLib.format_size (transfer.size)
+            ));
+
             send_notification ("io.elementary.bluetooth", notification);
-            Idle.add (()=>{activate_action ("btcancel", new Variant.string ("Cancel")); return false;});
+            Idle.add (()=>{
+                activate_action ("btcancel", new Variant.string ("Cancel"));
+                return false;
+            });
+
             return;
         }
+
         if (bt_response == null) {
             bt_response = new BtResponse (this);
         }
+
         bt_response.response.connect ((response_id) => {
             if (response_id == Gtk.ResponseType.ACCEPT) {
                 activate_action ("btaccept", new Variant.string ("Accept"));
             } else {
                 activate_action ("btcancel", new Variant.string ("Cancel"));
             }
+
             dialog_destroy ();
         });
+
         bt_response.destroy.connect (() => {
             bt_response = null;
         });
+
         if (object_manager.settings.get_int ("bluetooth-accept-files") == 0) {
             notification.set_priority (NotificationPriority.URGENT);
             notification.set_title (_("Incoming file"));
-            notification.set_body (_("<b>%s</b> is ready to send file: %s size: %s").printf (devicename == null? device_icon (device) : devicename, transfer.name, GLib.format_size (transfer.size)));
+            notification.set_body (_("<b>%s</b> is ready to send file: %s size: %s").printf (
+                devicename == null? device_icon (device) : devicename, transfer.name, GLib.format_size (transfer.size)
+            ));
             notification.add_button (_("Accept"), GLib.Action.print_detailed_name ("app.btaccept", new Variant ("s", "Accept")));
             notification.add_button (_("Cancel"), GLib.Action.print_detailed_name ("app.btcancel", new Variant ("s", "Cancel")));
             bt_response.update_device (devicename == null? device_icon (device) : devicename);
@@ -232,9 +262,16 @@ public class BluetoothApp : Gtk.Application {
             bt_response.update_icon (deviceicon);
         } else {
             notification.set_title (_("Receiving file"));
-            notification.set_body (_("%s sending file: %s size: %s").printf (devicename, transfer.name, GLib.format_size (transfer.size)));
-            Idle.add (()=>{ activate_action ("btaccept", new Variant.string ("Accept")); return false;});
+            notification.set_body (_("%s sending file: %s size: %s").printf (
+                devicename, transfer.name, GLib.format_size (transfer.size)
+            ));
+
+            Idle.add (()=>{
+                activate_action ("btaccept", new Variant.string ("Accept"));
+                return false;
+            });
         }
+
         send_notification ("io.elementary.bluetooth", notification);
     }
 
@@ -264,8 +301,11 @@ public class BluetoothApp : Gtk.Application {
             bt_response.destroy ();
         }
     }
+
     private bool reject_if_exist (string name, uint64 size) {
-        var input_file = File.new_for_path (GLib.Environment.get_user_special_dir (UserDirectory.DOWNLOAD) + GLib.Path.DIR_SEPARATOR_S + name);
+        var input_file = File.new_for_path (
+            GLib.Environment.get_user_special_dir (UserDirectory.DOWNLOAD) + GLib.Path.DIR_SEPARATOR_S + name
+        );
         uint64 size_file = 0;
         if (input_file.query_exists ()) {
            try {
@@ -275,18 +315,25 @@ public class BluetoothApp : Gtk.Application {
                 GLib.warning (e.message);
             }
         }
+
         return input_file.query_exists () && size == size_file;
     }
+
     private string contract_dir () {
         string build_path = Path.build_filename (Environment.get_home_dir (), ".local", "share", "contractor");
         if (!File.new_for_path (build_path).query_exists ()) {
             DirUtils.create (build_path, 0700);
         }
+
         return build_path;
     }
+
     private File file_contract () {
-        return File.new_for_path (Path.build_filename (contract_dir (), Environment.get_application_name () + ".contract"));
+        return File.new_for_path (
+            Path.build_filename (contract_dir (), Environment.get_application_name () + ".contract")
+        );
     }
+
     private void create_contract () {
         try {
             File file = file_contract ();
@@ -312,6 +359,7 @@ public class BluetoothApp : Gtk.Application {
     private void remove_contract () {
         permanent_delete (file_contract ());
     }
+
     private void permanent_delete (File file) {
         try {
             if (file.query_exists ()) {
@@ -321,6 +369,7 @@ public class BluetoothApp : Gtk.Application {
             warning ("Error: %s\n", e.message);
         }
     }
+
     public static int main (string[] args) {
         var app = new BluetoothApp ();
         return app.run (args);
