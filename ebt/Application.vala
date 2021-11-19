@@ -200,7 +200,7 @@ public class BluetoothApp : Gtk.Application {
         Bluetooth.Device device = object_manager.get_device (address);
         string devicename = device.name;
         string deviceicon = device.icon;
-        bt_receiver.set_tranfer (devicename == null? device_icon (device) : devicename, deviceicon, objectpath);
+        bt_receiver.set_transfer (devicename == null? device_icon (device) : devicename, deviceicon, objectpath);
     }
 
     private void response_notify (string address, GLib.ObjectPath objectpath) {
