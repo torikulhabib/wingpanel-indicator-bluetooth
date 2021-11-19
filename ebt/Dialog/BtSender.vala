@@ -167,7 +167,7 @@ public class BtSender : Granite.Dialog {
         liststore.get (iter, 0, out file_path);
 
         total_n_current ();
-        create_season.begin ();
+        create_session.begin ();
     }
 
     public void insert_files (File [] files) {
@@ -224,7 +224,7 @@ public class BtSender : Granite.Dialog {
         }
     }
 
-    private async void create_season () {
+    private async void create_session () {
         try {
             connection = yield GLib.Bus.get (BusType.SESSION);
             client_proxy = yield new GLib.DBusProxy (
@@ -302,7 +302,7 @@ public class BtSender : Granite.Dialog {
 
                     bt_retry.response.connect ((response_id) => {
                         if (response_id == Gtk.ResponseType.ACCEPT) {
-                            create_season.begin ();
+                            create_session.begin ();
                             present ();
                             bt_retry.destroy ();
                         } else {
