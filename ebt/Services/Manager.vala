@@ -19,6 +19,7 @@ public class Bluetooth.ObjectManager : Object {
     public signal void device_added (Bluetooth.Device device);
     public signal void device_removed (Bluetooth.Device device);
     public signal void status_discovering ();
+
     public bool has_object { get; private set; default = false; }
     public Settings settings;
     private GLib.DBusObjectManagerClient object_manager;
@@ -48,6 +49,7 @@ public class Bluetooth.ObjectManager : Object {
             object_manager.object_added.connect ((object) => {
                 object.get_interfaces ().foreach ((iface) => on_interface_added (object, iface));
             });
+
             object_manager.object_removed.connect ((object) => {
                 object.get_interfaces ().foreach ((iface) => on_interface_removed (object, iface));
             });
@@ -63,9 +65,14 @@ public class Bluetooth.ObjectManager : Object {
     [CCode (cname="bluetooth_adapter_proxy_get_type")]
     extern static GLib.Type get_adapter_proxy_type ();
 
-    private GLib.Type object_manager_proxy_get_type (DBusObjectManagerClient manager, string object_path, string? interface_name) {
-        if (interface_name == null)
+    private GLib.Type object_manager_proxy_get_type (
+        DBusObjectManagerClient manager,
+        string object_path,
+        string? interface_name
+    ) {
+        if (interface_name == null) {
             return typeof (GLib.DBusObjectProxy);
+        }
 
         switch (interface_name) {
             case "org.bluez.Device1":
@@ -80,7 +87,16 @@ public class Bluetooth.ObjectManager : Object {
     private void obex_agentmanager () {
         try {
             var connection = GLib.Bus.get_sync (BusType.SESSION);
-            connection.call.begin ("org.bluez.obex", "/org/bluez/obex", "org.bluez.obex.AgentManager1", settings.get_boolean ("bluetooth-obex-enabled")? "RegisterAgent" : "UnregisterAgent", new Variant ("(o)", "/org/bluez/obex/elementary"), null, GLib.DBusCallFlags.NONE, -1);
+            connection.call.begin (
+                "org.bluez.obex",
+                "/org/bluez/obex",
+                "org.bluez.obex.AgentManager1",
+                settings.get_boolean ("bluetooth-obex-enabled")? "RegisterAgent" : "UnregisterAgent",
+                new Variant ("(o)", "/org/bluez/obex/elementary"),
+                null,
+                GLib.DBusCallFlags.NONE,
+                -1
+            );
         } catch (Error e) {
             critical (e.message);
         }
@@ -114,8 +130,9 @@ public class Bluetooth.ObjectManager : Object {
         var adapters = new Gee.LinkedList<Bluetooth.Adapter> ();
         object_manager.get_objects ().foreach ((object) => {
             GLib.DBusInterface? iface = object.get_interface ("org.bluez.Adapter1");
-            if (iface == null)
+            if (iface == null) {
                 return;
+            }
 
             adapters.add (((Bluetooth.Adapter) iface));
         });
@@ -127,8 +144,9 @@ public class Bluetooth.ObjectManager : Object {
         var devices = new Gee.LinkedList<Bluetooth.Device> ();
         object_manager.get_objects ().foreach ((object) => {
             GLib.DBusInterface? iface = object.get_interface ("org.bluez.Device1");
-            if (iface == null)
+            if (iface == null) {
                 return;
+            }
 
             devices.add (((Bluetooth.Device) iface));
         });
@@ -146,11 +164,13 @@ public class Bluetooth.ObjectManager : Object {
             }
         }
     }
+
     public bool check_discovering () {
         var adapters = get_adapters ();
         foreach (var adapter in adapters) {
             return adapter.discovering;
         }
+
         return false;
     }
 
@@ -184,6 +204,7 @@ public class Bluetooth.ObjectManager : Object {
                 return device;
             }
         }
+
         return null;
     }
 }
